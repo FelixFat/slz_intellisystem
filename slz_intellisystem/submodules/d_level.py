@@ -1,6 +1,6 @@
 import numpy as np
 
-from params import IMG_SHAPE, W_SIZE, E_AREA, E_STD
+from .params import IMG_SHAPE, W_SIZE, E_AREA, E_STD
 
 
 def decomp_image(d_im: np.ndarray) -> np.ndarray:

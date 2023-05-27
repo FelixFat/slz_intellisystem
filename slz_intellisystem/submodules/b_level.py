@@ -1,10 +1,10 @@
 import numpy as np
 
-from params import *
-import c_level
-import d_level
-import e_level
-import f_level
+from .params import *
+from . import c_level
+from . import d_level
+from . import e_level
+from . import f_level
 
 
 def px2m(r:float, h: float):
@@ -58,5 +58,5 @@ def disp(model, color, depth, altitude):
     else:
         radius_m = 0.0
 
-    return e_mask, f_mask, x_coord, y_coord, radius_m, valid, etype
+    return c_mask, d_mask, e_mask, f_mask, x_coord, y_coord, radius_m, valid, etype
 

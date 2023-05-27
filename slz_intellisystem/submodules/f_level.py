@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from params import IMG_SHAPE
+from .params import IMG_SHAPE
 
 
 def calc_dist(in_pos: np.ndarray):

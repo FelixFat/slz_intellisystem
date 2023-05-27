@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from params import IMG_SHAPE, MOD_SHAPE
+from .params import IMG_SHAPE, MOD_SHAPE
 
 
 def get_mask(pr_mask):

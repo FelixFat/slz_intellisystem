@@ -4,6 +4,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from mavros_msgs.msg import Altitude
+from slz_msgs.msg import Evaluation
 
 from cv_bridge import CvBridge
 
@@ -11,16 +12,15 @@ import numpy as np
 from tensorflow import keras
 import segmentation_models as sm
 
-import b_level
-
-from params import IMG_SHAPE
+from .submodules import b_level
+from .submodules.params import IMG_SHAPE
 
 
 class SLZ_Evaluation(Node):
 
     def __init__(self):
         super().__init__('slz_evaluation')
-        self.publisher_ = self.create_publisher(String, '/slz/evaluation', 10)
+        self.publisher_ = self.create_publisher(Evaluation, '/slz/evaluation', 10)
         timer_period = 2.0  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
@@ -72,7 +72,7 @@ class SLZ_Evaluation(Node):
 
     def _get_model(self, threshold=0.5):
         return keras.models.load_model(
-            '../include/model.h5', custom_objects = {
+            'model.h5', custom_objects = {
                 'dice_loss_plus_1focal_loss': self.__dice_loss_plus_1focal_loss,
                 'iou_score': sm.metrics.IOUScore(threshold=threshold),
                 'f1-score': sm.metrics.FScore(threshold=threshold)
@@ -81,16 +81,19 @@ class SLZ_Evaluation(Node):
 
 
     def timer_callback(self):
-        msg = String()
-        msg.data = 'This is SLZ IntelliSystem!'
-        self.publisher_.publish(msg)
+        self.forward_mask, self.direct_mask, self.slz_mask, self.slp_mask,\
+            self.x_coord, self.y_coord, self.radius, self.valid, self.etype =\
+                b_level.disp(self.model, self.color, self.model, self.altitude)
+        
+        msg = Evaluation()
+        msg.x_coord = float(self.x_coord)
+        msg.y_coord = float(self.y_coord)
+        msg.radius = self.radius
+        msg.valid = self.valid
+        msg.etype = self.etype
 
-        #Self code
-        res = b_level.disp(self.model, self.color, self.model, self.altitude)
-
-        msg.data = f'This is SLZ IntelliSystem: {res[1]}, {res[2]}'
         self.publisher_.publish(msg)
-        self.get_logger().info(f'Publishing: {msg.data}')
+        self.get_logger().info(f'Publishing: {msg.valid}')
 
 
     def _depth_callback(self, msg):
