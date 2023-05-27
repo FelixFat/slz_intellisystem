@@ -1,13 +1,11 @@
 import cv2
 import numpy as np
 
-
-IMG_SHAPE = (480, 640)
-IMG_CENTER = (240, 320)
+from params import IMG_SHAPE
 
 
 def calc_dist(in_pos: np.ndarray):
-    return np.linalg.norm(IMG_CENTER - in_pos)
+    return np.linalg.norm((IMG_SHAPE[0] // 2, IMG_SHAPE[1] // 2) - in_pos)
 
 
 def find_nearest(points: np.ndarray):
@@ -23,5 +21,6 @@ def call(mask):
     center = find_nearest(
         np.column_stack(np.where(res_mask == radius))
     )
+    x, y = center
 
-    return res_mask, center, radius
+    return res_mask, x, y, radius

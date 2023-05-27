@@ -1,11 +1,6 @@
 import numpy as np
 
-
-W_SIZE = 80
-D_SHAPE = (480, 640)
-
-E_AREA = 0.70
-E_STD = 0.05
+from params import IMG_SHAPE, W_SIZE, E_AREA, E_STD
 
 
 def decomp_image(d_im: np.ndarray) -> np.ndarray:
@@ -64,7 +59,7 @@ def calc_w(comp_im) -> np.ndarray:
 
 
 def get_mask(comp_im) -> np.ndarray:
-    mask = np.zeros(D_SHAPE, dtype=np.uint8)
+    mask = np.zeros(IMG_SHAPE, dtype=np.uint8)
 
     for r in range(mask.shape[0]):
         for c in range(mask.shape[1]):
