@@ -25,12 +25,11 @@ def calc_stat(im: np.ndarray) -> np.ndarray:
     size = loc_list.size
     area = size / loc_list.shape[0] if size > 0 else 0
     std = np.std(loc_list) if size > 0 else 0
-    average = np.average(loc_list) if size > 0 else 0
     median = np.median(loc_list) if size > 0 else 0
 
     fl = 0
     if median != 0:
-        if median > (H_MEDIAN + E_STD):
+        if median < (H_MEDIAN + E_STD):
             fl = 1
         else:
             fl = 2
