@@ -1,10 +1,9 @@
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from mavros_msgs.msg import Altitude
-from slz_msgs.msg import Evaluation
+from slz_msgs.msg import Evaluation, Images
 
 from cv_bridge import CvBridge
 
@@ -20,8 +19,15 @@ class SLZ_Evaluation(Node):
 
     def __init__(self):
         super().__init__('slz_evaluation')
-        self.publisher_ = self.create_publisher(Evaluation, '/slz/evaluation', 10)
-        timer_period = 2.0  # seconds
+        self.pub_est = self.create_publisher(Evaluation, '/slz_intellisystem/evaluation', 10)
+        self.pub_imgs = self.create_publisher(Images, '/slz_intellisystem/images', 10)
+
+        self.pub_img_forward = self.create_publisher(Image, '/slz_intellisystem/image/forward', 10)
+        self.pub_img_direct = self.create_publisher(Image, '/slz_intellisystem/image/direct', 10)
+        self.pub_img_slz = self.create_publisher(Image, '/slz_intellisystem/image/slz', 10)
+        self.pub_img_slp = self.create_publisher(Image, '/slz_intellisystem/image/slp', 10)
+
+        timer_period = 1.5 # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.subscription = self.create_subscription(
@@ -83,30 +89,55 @@ class SLZ_Evaluation(Node):
     def timer_callback(self):
         self.forward_mask, self.direct_mask, self.slz_mask, self.slp_mask,\
             self.x_coord, self.y_coord, self.radius, self.valid, self.etype =\
-                b_level.disp(self.model, self.color, self.model, self.altitude)
+                b_level.disp(self.model, self.color, self.depth, self.altitude)
         
-        msg = Evaluation()
-        msg.x_coord = float(self.x_coord)
-        msg.y_coord = float(self.y_coord)
-        msg.radius = self.radius
-        msg.valid = self.valid
-        msg.etype = self.etype
+        msg_est = Evaluation()
+        msg_est.x_coord = float(self.x_coord)
+        msg_est.y_coord = float(self.y_coord)
+        msg_est.radius = self.radius
+        msg_est.valid = self.valid
+        msg_est.etype = self.etype
 
-        self.publisher_.publish(msg)
-        self.get_logger().info(f'Publishing: {msg.valid}')
+        img_forward = self.bridge.cv2_to_imgmsg(self.forward_mask * 255)
+        img_direct = self.bridge.cv2_to_imgmsg(self.direct_mask * 255)
+        img_slz = self.bridge.cv2_to_imgmsg(self.slz_mask * 255)
+        img_slp = self.bridge.cv2_to_imgmsg(self.slp_mask)
+
+        msg_imgs = Images()
+        msg_imgs.forward_mask = img_forward
+        msg_imgs.direct_mask = img_direct
+        msg_imgs.slz_mask = img_slz
+        msg_imgs.slp_mask = img_slp
+
+        # publish slz_msgs messages
+        self.pub_est.publish(msg_est)
+        self.pub_imgs.publish(msg_imgs)
+
+        # publish image messages
+        self.pub_img_forward.publish(img_forward)
+        self.pub_img_direct.publish(img_direct)
+        self.pub_img_slz.publish(img_slz)
+        self.pub_img_slp.publish(img_slp)
+
+        self.get_logger().info(f'Distance: {self.altitude} metres')
 
 
     def _depth_callback(self, msg):
-            depth_image = self.bridge.imgmsg_to_cv2(msg)
-            self.depth = np.array(depth_image, dtype=np.float32)
+        depth_image = self.bridge.imgmsg_to_cv2(msg, msg.encoding)
+        self.depth = np.array(depth_image, dtype=np.float32) / 1000
+        
+        center_idx = np.array(self.depth.shape) // 2
+        self.altitude = self.depth[center_idx[0], center_idx[1]]
 
 
     def _color_callback(self, msg):
-            self.color = self.bridge.imgmsg_to_cv2(msg)
+        color_image = self.bridge.imgmsg_to_cv2(msg)
+        self.color = np.array(color_image, dtype=np.uint8)
 
     
     def _altitude_callback(self, msg):
-            self.altitude = msg.data
+        pass
+        #self.altitude = msg.data
 
 
 def main(args=None):
